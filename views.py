@@ -122,6 +122,15 @@ def chart_card_close():
     st.markdown("</div>", unsafe_allow_html=True)
 
 
+_CORES_ESCURAS = {COLORS["slate"], COLORS["orange_dark"], COLORS["navy"]}
+
+
+def _cor_texto_para(cores):
+    """Escolhe texto claro sobre fundos escuros e texto escuro sobre fundos
+    claros, para os rótulos de valor ficarem legíveis dentro das barras."""
+    return [COLORS["text"] if c in _CORES_ESCURAS else COLORS["navy"] for c in cores]
+
+
 def _donut(labels, values, height):
     total = sum(values)
     fig = go.Figure(go.Pie(
@@ -340,6 +349,9 @@ def view_analise(df: pd.DataFrame, df_prev: pd.DataFrame | None = None, df_full:
         fig = go.Figure(go.Bar(
             x=ano["Ano"].astype(str), y=ano["Valor_Total"],
             marker=dict(color=COLORS["orange"], cornerradius=8),
+            text=[fmt_moeda(v) for v in ano["Valor_Total"]],
+            textposition="inside",
+            textfont=dict(color=COLORS["text"]),
             hovertemplate="%{x}<br>R$ %{y:,.2f}<extra></extra>",
         ))
         fig = plotly_layout_defaults(fig, height=300, legend=False)
@@ -354,6 +366,10 @@ def view_analise(df: pd.DataFrame, df_prev: pd.DataFrame | None = None, df_full:
         fig = go.Figure(go.Bar(
             x=pag["Valor_Total"], y=pag["Forma_Pagamento"], orientation="h",
             marker=dict(color=COLORS["lime"], cornerradius=8),
+            text=[fmt_moeda(v) for v in pag["Valor_Total"]],
+            textposition="inside",
+            insidetextanchor="middle",
+            textfont=dict(color=COLORS["navy"]),
             hovertemplate="%{y}<br>R$ %{x:,.2f}<extra></extra>",
         ))
         fig = plotly_layout_defaults(fig, height=300, legend=False)
@@ -403,15 +419,14 @@ def view_vendedor(df: pd.DataFrame, df_full: pd.DataFrame | None = None):
     with col_a:
         chart_card_open("Ranking de Vendas por Vendedor")
         r = resumo.sort_values("Total", ascending=True)
+        cores_r = [CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)] for i in range(len(r))]
         fig = go.Figure(go.Bar(
             x=r["Total"], y=r["Vendedor"], orientation="h",
-            marker=dict(
-                color=[CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)] for i in range(len(r))],
-                cornerradius=8,
-            ),
+            marker=dict(color=cores_r, cornerradius=8),
             text=[fmt_moeda(v) for v in r["Total"]],
-            textposition="outside",
-            textfont=dict(color=COLORS["text"]),
+            textposition="inside",
+            insidetextanchor="middle",
+            textfont=dict(color=_cor_texto_para(cores_r)),
             hovertemplate="%{y}<br>R$ %{x:,.2f}<extra></extra>",
         ))
         fig = plotly_layout_defaults(fig, height=360, legend=False)
@@ -425,6 +440,10 @@ def view_vendedor(df: pd.DataFrame, df_full: pd.DataFrame | None = None):
         fig = go.Figure(go.Bar(
             x=eve["AnoMes"], y=eve["Valor_Total"],
             marker=dict(color="rgba(232,117,46,0.45)", line=dict(color=COLORS["orange"], width=1.5), cornerradius=4),
+            text=[fmt_moeda(v) for v in eve["Valor_Total"]],
+            textposition="inside",
+            textfont=dict(color=COLORS["text"], size=9),
+            textangle=-90,
             hovertemplate="%{x|%b/%Y}<br>R$ %{y:,.2f}<extra></extra>",
         ))
         fig = plotly_layout_defaults(fig, height=360, legend=False)
@@ -441,9 +460,14 @@ def view_vendedor(df: pd.DataFrame, df_full: pd.DataFrame | None = None):
         fig = go.Figure()
         for i, categoria in enumerate(sorted(piv["Categoria"].unique())):
             serie = piv[piv["Categoria"] == categoria].set_index("Vendedor").reindex(ordem_vend)
+            cor = CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)]
             fig.add_trace(go.Bar(
                 y=ordem_vend, x=serie["Pct"], orientation="h", name=categoria,
-                marker=dict(color=CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)], cornerradius=6),
+                marker=dict(color=cor, cornerradius=6),
+                text=[f"{v:.0f}%" if pd.notna(v) else "" for v in serie["Pct"]],
+                textposition="inside",
+                insidetextanchor="middle",
+                textfont=dict(color=_cor_texto_para([cor])[0]),
                 hovertemplate=f"{categoria}<br>" + "%{y}: %{x:.1f}%<extra></extra>",
             ))
         fig.update_layout(barmode="stack")
@@ -462,7 +486,8 @@ def view_vendedor(df: pd.DataFrame, df_full: pd.DataFrame | None = None):
                 cornerradius=8,
             ),
             text=[fmt_moeda(v) for v in t["Ticket"]],
-            textposition="outside",
+            textposition="inside",
+            insidetextanchor="middle",
             textfont=dict(color=COLORS["text"]),
             hovertemplate="%{y}<br>R$ %{x:,.2f}<extra></extra>",
         ))
@@ -529,6 +554,10 @@ def view_produtos(df: pd.DataFrame, df_full: pd.DataFrame | None = None):
                 color=top15["Total"], colorscale=[[0, COLORS["slate_light"]], [1, COLORS["orange"]]],
                 cornerradius=6,
             ),
+            text=[fmt_moeda(v) for v in top15["Total"]],
+            textposition="inside",
+            insidetextanchor="middle",
+            textfont=dict(color=COLORS["text"], size=10),
             hovertemplate="%{y}<br>R$ %{x:,.2f}<extra></extra>",
         ))
         fig = plotly_layout_defaults(fig, height=420, legend=False)
