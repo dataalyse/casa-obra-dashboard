@@ -7,6 +7,7 @@ Vendedor e Vendas por Produtos.
 from __future__ import annotations
 
 import pandas as pd
+import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -492,13 +493,15 @@ def view_produtos(df: pd.DataFrame):
 
     chart_card_open("Categoria e Subcategoria — Mapa de Faturamento")
     sub = df.groupby(["Categoria", "Subcategoria"], as_index=False)["Valor_Total"].sum()
-    fig = go.Figure(go.Treemap(
-        labels=sub["Subcategoria"], parents=sub["Categoria"], values=sub["Valor_Total"],
-        branchvalues="total",
-        marker=dict(colors=CATEGORY_PALETTE * 3, line=dict(color=COLORS["surface"], width=2)),
+    fig = px.treemap(
+        sub, path=["Categoria", "Subcategoria"], values="Valor_Total",
+        color="Categoria", color_discrete_sequence=CATEGORY_PALETTE,
+    )
+    fig.update_traces(
+        marker=dict(line=dict(color=COLORS["surface"], width=2)),
         textfont=dict(family="Work Sans", size=12, color=COLORS["navy"]),
         hovertemplate="%{label}<br>R$ %{value:,.2f}<extra></extra>",
-    ))
+    )
     fig = plotly_layout_defaults(fig, height=420, legend=False)
     fig.update_layout(margin=dict(l=4, r=4, t=10, b=4))
     st.plotly_chart(fig, width="stretch")

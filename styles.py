@@ -27,10 +27,7 @@ html, body, [class*="css"] {{
     background-color: {COLORS['navy']};
     background-image:
         radial-gradient(ellipse 900px 500px at 12% -10%, rgba(232,117,46,0.14), transparent 60%),
-        radial-gradient(ellipse 700px 500px at 100% 0%, rgba(228,242,34,0.08), transparent 55%),
-        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-    background-size: auto, auto, 32px 32px, 32px 32px;
+        radial-gradient(ellipse 700px 500px at 100% 0%, rgba(228,242,34,0.08), transparent 55%);
 }}
 
 section[data-testid="stSidebar"] {{
