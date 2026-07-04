@@ -366,18 +366,15 @@ def view_vendedor(df: pd.DataFrame):
         chart_card_close()
 
     with col_b:
-        chart_card_open("Evolução Mensal por Vendedor")
-        eve = df.groupby(["AnoMes", "Vendedor"], as_index=False)["Valor_Total"].sum()
-        fig = go.Figure()
-        for i, vendedor in enumerate(sorted(eve["Vendedor"].unique())):
-            serie = eve[eve["Vendedor"] == vendedor]
-            fig.add_trace(go.Scatter(
-                x=serie["AnoMes"], y=serie["Valor_Total"],
-                mode="lines", line_shape="spline", name=vendedor,
-                line=dict(color=CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)], width=2.5),
-                hovertemplate=f"{vendedor}<br>" + "%{x|%b/%Y}<br>R$ %{y:,.2f}<extra></extra>",
-            ))
-        fig = plotly_layout_defaults(fig, height=360, legend=True)
+        chart_card_open("Evolução Mensal de Vendas")
+        eve = df.groupby("AnoMes", as_index=False)["Valor_Total"].sum()
+        fig = go.Figure(go.Bar(
+            x=eve["AnoMes"], y=eve["Valor_Total"],
+            marker=dict(color="rgba(232,117,46,0.45)", line=dict(color=COLORS["orange"], width=1.5), cornerradius=4),
+            hovertemplate="%{x|%b/%Y}<br>R$ %{y:,.2f}<extra></extra>",
+        ))
+        fig = plotly_layout_defaults(fig, height=360, legend=False)
+        fig.update_layout(bargap=0.55)
         st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
