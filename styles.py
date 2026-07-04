@@ -74,6 +74,7 @@ html, body, [class*="css"] {{
     padding: 20px 22px 18px 22px;
     height: 100%;
     overflow: hidden;
+    box-shadow: 0 0 14px rgba(232,117,46,0.35);
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }}
 .kpi-card::before {{
@@ -139,6 +140,7 @@ html, body, [class*="css"] {{
     border-radius: 14px;
     padding: 16px 18px 6px 18px;
     margin-bottom: 18px;
+    box-shadow: 0 0 14px rgba(232,117,46,0.35);
 }}
 .chart-card-title {{
     font-family: {FONT_BODY};
@@ -174,6 +176,7 @@ html, body, [class*="css"] {{
     padding: 28px 30px;
     margin-bottom: 22px;
     overflow: hidden;
+    box-shadow: 0 0 14px rgba(232,117,46,0.35);
 }}
 .hero-card::before {{
     content: "";
@@ -215,6 +218,7 @@ html, body, [class*="css"] {{
     border-radius: 14px;
     padding: 16px 18px;
     height: 100%;
+    box-shadow: 0 0 14px rgba(232,117,46,0.35);
 }}
 .highlight-kicker {{
     font-size: 11px;
@@ -278,6 +282,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {{
     border-color: {COLORS['border']} !important;
     border-radius: 14px !important;
     background: rgba(255,255,255,0.02);
+    box-shadow: 0 0 14px rgba(232,117,46,0.35);
 }}
 
 footer {{visibility: hidden;}}
