@@ -75,13 +75,6 @@ with st.sidebar:
     vendedores = st.multiselect("Vendedor", sorted(df["Vendedor"].unique()))
     formas = st.multiselect("Forma de Pagamento", sorted(df["Forma_Pagamento"].unique()))
 
-    st.markdown("<hr>", unsafe_allow_html=True)
-    st.markdown(
-        "<p style='font-size:11px; color:#8A93A6;'>Casa&Obra • Material de Construção<br>"
-        "Dashboard gerado em Python + Streamlit</p>",
-        unsafe_allow_html=True,
-    )
-
 df_filtrado = apply_filters(df, data_ini, data_fim, categorias, vendedores, formas)
 df_anterior = periodo_anterior(df, data_ini, data_fim, categorias, vendedores, formas)
 
