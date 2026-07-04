@@ -30,17 +30,6 @@ html, body, [class*="css"] {{
         radial-gradient(ellipse 700px 500px at 100% 0%, rgba(228,242,34,0.08), transparent 55%);
 }}
 
-section[data-testid="stSidebar"] {{
-    background-color: {COLORS['surface']};
-    border-right: 1px solid {COLORS['border']};
-}}
-section[data-testid="stSidebar"] * {{
-    color: {COLORS['text']} !important;
-}}
-section[data-testid="stSidebar"] hr {{
-    border-color: {COLORS['border']};
-}}
-
 /* Régua de acento — divisor de seção assinatura do painel */
 .ruler-divider {{
     height: 4px;
@@ -247,43 +236,65 @@ section[data-testid="stSidebar"] hr {{
     color: {COLORS['lime']};
 }}
 
-/* Navegação lateral estilo "menu do painel" */
-div[data-testid="stSidebar"] .stRadio > label {{
-    display: none;
-}}
-div[data-testid="stSidebar"] .stRadio [role="radiogroup"] label {{
-    background: rgba(255,255,255,0.03);
-    border: 1px solid {COLORS['border']};
+/* Botões — navegação (topo das páginas) e ações em geral */
+.stButton>button, .stDownloadButton>button {{
     border-radius: 8px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    width: 100%;
-    transition: background 0.15s ease, border-color 0.15s ease;
-}}
-div[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:hover {{
-    background: rgba(232,117,46,0.16);
-    border-color: {COLORS['orange']};
-}}
-div[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked) {{
-    background: linear-gradient(90deg, rgba(232,117,46,0.30), rgba(228,242,34,0.08));
-    border-color: {COLORS['orange']};
-    box-shadow: 0 0 12px rgba(232,117,46,0.25);
+    font-weight: 600;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }}
 
-/* Botões */
-.stButton>button, .stDownloadButton>button {{
+/* Botão "primary" = página ativa na navegação */
+[data-testid="stBaseButton-primary"] {{
+    background: linear-gradient(90deg, {COLORS['orange']}, {COLORS['orange_dark']}) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 0 14px rgba(232,117,46,0.35);
+}}
+
+/* Botão "secondary" = demais páginas / ações neutras */
+[data-testid="stBaseButton-secondary"] {{
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid {COLORS['border']} !important;
+    color: {COLORS['muted']} !important;
+}}
+[data-testid="stBaseButton-secondary"]:hover {{
+    background: rgba(232,117,46,0.16) !important;
+    border-color: {COLORS['orange']} !important;
+    color: {COLORS['text']} !important;
+}}
+
+.stDownloadButton>button {{
     background: linear-gradient(90deg, {COLORS['orange']}, {COLORS['orange_dark']});
     color: white;
     border: none;
-    border-radius: 8px;
-    font-weight: 600;
 }}
-.stButton>button:hover, .stDownloadButton>button:hover {{
+.stDownloadButton>button:hover {{
     background: {COLORS['lime']};
     color: {COLORS['navy']};
 }}
 
+/* Contêiner com borda (usado na barra de filtros de cada página) */
+div[data-testid="stVerticalBlockBorderWrapper"] {{
+    border-color: {COLORS['border']} !important;
+    border-radius: 14px !important;
+    background: rgba(255,255,255,0.02);
+}}
+
 footer {{visibility: hidden;}}
 #MainMenu {{visibility: hidden;}}
+
+/* Marca d'água */
+.watermark {{
+    position: fixed;
+    bottom: 14px;
+    right: 18px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+    color: {COLORS['muted']};
+    opacity: 0.5;
+    z-index: 9999;
+    pointer-events: none;
+    user-select: none;
+}}
 </style>
 """

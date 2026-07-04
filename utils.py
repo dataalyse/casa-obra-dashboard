@@ -46,6 +46,14 @@ FONT_MONO = "'IBM Plex Mono', 'Courier New', monospace"
 
 DATA_PATH = "data/vendas.xlsx"
 
+# Páginas do painel: (rótulo com ícone, chave interna usada em st.session_state)
+PAGINAS = [
+    ("🏠 Início", "Início"),
+    ("📊 Análise de Vendas", "Análise de Vendas"),
+    ("🧑‍🔧 Vendas por Vendedor", "Vendas por Vendedor"),
+    ("🧱 Vendas por Produtos", "Vendas por Produtos"),
+]
+
 
 @st.cache_data(show_spinner=False)
 def load_data(path: str = DATA_PATH) -> pd.DataFrame:
@@ -115,6 +123,23 @@ def data_extenso_br(agora: datetime | None = None) -> str:
     dia_semana = DIAS_PT_EXT[agora.weekday()]
     texto = f"{dia_semana}, {agora.day} de {MESES_PT_EXT[agora.month]} de {agora.year}"
     return texto[0].upper() + texto[1:]
+
+
+def get_filter_state(df: pd.DataFrame):
+    """Lê o estado atual dos filtros a partir do session_state (com valores
+    padrão para a primeira execução). Os widgets em si são desenhados mais
+    tarde, dentro de cada página — isso permite calcular os KPIs já filtrados
+    antes de renderizar os controles de filtro na tela."""
+    data_min, data_max = df["Data_Venda"].min().date(), df["Data_Venda"].max().date()
+    periodo = st.session_state.get("flt_periodo", (data_min, data_max))
+    if isinstance(periodo, tuple) and len(periodo) == 2:
+        data_ini, data_fim = periodo
+    else:
+        data_ini, data_fim = data_min, data_max
+    categorias = st.session_state.get("flt_categorias", [])
+    vendedores = st.session_state.get("flt_vendedores", [])
+    formas = st.session_state.get("flt_formas", [])
+    return data_ini, data_fim, categorias, vendedores, formas
 
 
 def apply_filters(df: pd.DataFrame, data_ini, data_fim, categorias, vendedores, formas) -> pd.DataFrame:

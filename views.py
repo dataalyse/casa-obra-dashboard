@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from utils import (
-    COLORS, CATEGORY_PALETTE,
+    COLORS, CATEGORY_PALETTE, PAGINAS,
     fmt_moeda, fmt_num, fmt_pct, plotly_layout_defaults, variacao_pct,
 )
 
@@ -20,6 +20,54 @@ from utils import (
 # ----------------------------------------------------------------------------
 # Componentes reutilizáveis
 # ----------------------------------------------------------------------------
+def nav_bar(atual: str, incluir_inicio: bool = True):
+    """Botões de navegação entre as páginas (substituem a barra lateral).
+
+    Importante: NÃO chama st.rerun() aqui. Isso é proposital — esta função
+    roda antes de filtros_bar() dentro de cada página, e um rerun imediato
+    interromperia o script antes dos widgets de filtro (mais abaixo na
+    mesma página) serem instanciados nesta execução. Como o Streamlit
+    descarta o estado de um widget que não é registrado durante uma
+    execução completa, isso apagaria os filtros ao trocar de página. Por
+    isso o rerun é adiado para o fim do script, em app.py, depois que a
+    página atual (com seus filtros) já renderizou por inteiro.
+    """
+    paginas = PAGINAS if incluir_inicio else [p for p in PAGINAS if p[1] != "Início"]
+    cols = st.columns(len(paginas))
+    for col, (label, chave) in zip(cols, paginas):
+        with col:
+            tipo = "primary" if chave == atual else "secondary"
+            if st.button(label, key=f"nav_{chave}", width="stretch", type=tipo) and chave != atual:
+                st.session_state["pagina"] = chave
+                st.session_state["_trocar_pagina"] = True
+    st.markdown("<br>", unsafe_allow_html=True)
+
+
+def filtros_bar(df: pd.DataFrame):
+    """Controles de filtro (período, categoria, vendedor, forma de pagamento),
+    exibidos logo abaixo dos cartões de indicadores de cada página."""
+    data_min, data_max = df["Data_Venda"].min().date(), df["Data_Venda"].max().date()
+    with st.container(border=True):
+        st.markdown(
+            f"<p style='font-size:12px; font-weight:700; color:{COLORS['muted']}; "
+            "text-transform:uppercase; letter-spacing:0.6px; margin-bottom:8px;'>Filtros</p>",
+            unsafe_allow_html=True,
+        )
+        c1, c2, c3, c4 = st.columns([1.3, 1, 1, 1])
+        with c1:
+            st.date_input(
+                "Período", value=st.session_state.get("flt_periodo", (data_min, data_max)),
+                min_value=data_min, max_value=data_max, key="flt_periodo",
+            )
+        with c2:
+            st.multiselect("Categoria", sorted(df["Categoria"].unique()), key="flt_categorias")
+        with c3:
+            st.multiselect("Vendedor", sorted(df["Vendedor"].unique()), key="flt_vendedores")
+        with c4:
+            st.multiselect("Forma de Pagamento", sorted(df["Forma_Pagamento"].unique()), key="flt_formas")
+    st.markdown("<br>", unsafe_allow_html=True)
+
+
 def page_header(titulo: str, subtitulo: str):
     st.markdown(
         f"""
@@ -108,6 +156,8 @@ def view_inicio(df: pd.DataFrame, df_prev: pd.DataFrame, saudacao: str, data_ext
         """,
         unsafe_allow_html=True,
     )
+
+    nav_bar("Início", incluir_inicio=False)
 
     if df.empty:
         st.warning("Nenhum dado para os filtros selecionados.")
@@ -219,7 +269,8 @@ def view_inicio(df: pd.DataFrame, df_prev: pd.DataFrame, saudacao: str, data_ext
 # ----------------------------------------------------------------------------
 # PÁGINA 1 — ANÁLISE DE VENDAS
 # ----------------------------------------------------------------------------
-def view_analise(df: pd.DataFrame, df_prev: pd.DataFrame | None = None):
+def view_analise(df: pd.DataFrame, df_prev: pd.DataFrame | None = None, df_full: pd.DataFrame | None = None):
+    nav_bar("Análise de Vendas")
     page_header(
         "Análise de Vendas",
         "Visão geral do desempenho comercial da Casa&Obra no período selecionado.",
@@ -254,6 +305,7 @@ def view_analise(df: pd.DataFrame, df_prev: pd.DataFrame | None = None):
         kpi_card("Margem Estimada", fmt_moeda(margem_total), delta_pct=variacao_pct(margem_total, margem_prev))
 
     st.markdown("<br>", unsafe_allow_html=True)
+    filtros_bar(df_full if df_full is not None else df)
 
     col_a, col_b = st.columns([2, 1])
     with col_a:
@@ -312,7 +364,8 @@ def view_analise(df: pd.DataFrame, df_prev: pd.DataFrame | None = None):
 # ----------------------------------------------------------------------------
 # PÁGINA 2 — VENDAS POR VENDEDOR
 # ----------------------------------------------------------------------------
-def view_vendedor(df: pd.DataFrame):
+def view_vendedor(df: pd.DataFrame, df_full: pd.DataFrame | None = None):
+    nav_bar("Vendas por Vendedor")
     page_header(
         "Vendas por Vendedor",
         "Desempenho comparado da equipe de vendas da Casa&Obra.",
@@ -344,6 +397,7 @@ def view_vendedor(df: pd.DataFrame):
         kpi_card("Margem Média/Vendedor", fmt_moeda(resumo["Margem"].mean()))
 
     st.markdown("<br>", unsafe_allow_html=True)
+    filtros_bar(df_full if df_full is not None else df)
 
     col_a, col_b = st.columns([1, 1.3])
     with col_a:
@@ -431,7 +485,8 @@ def view_vendedor(df: pd.DataFrame):
 # ----------------------------------------------------------------------------
 # PÁGINA 3 — VENDAS POR PRODUTOS
 # ----------------------------------------------------------------------------
-def view_produtos(df: pd.DataFrame):
+def view_produtos(df: pd.DataFrame, df_full: pd.DataFrame | None = None):
+    nav_bar("Vendas por Produtos")
     page_header(
         "Vendas por Produtos",
         "Produtos, categorias e subcategorias que mais vendem na Casa&Obra.",
@@ -462,6 +517,7 @@ def view_produtos(df: pd.DataFrame):
         kpi_card("Produtos no Catálogo", fmt_num(df["Nome_Produto"].nunique()))
 
     st.markdown("<br>", unsafe_allow_html=True)
+    filtros_bar(df_full if df_full is not None else df)
 
     col_a, col_b = st.columns([1.3, 1])
     with col_a:
