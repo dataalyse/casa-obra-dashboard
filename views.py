@@ -1,17 +1,18 @@
 """
 Casa&Obra — Painel de Vendas
-Renderização das três páginas do painel: Análise de Vendas, Vendas por
+Renderização das páginas do painel: Início, Análise de Vendas, Vendas por
 Vendedor e Vendas por Produtos.
 """
 
+from __future__ import annotations
+
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
 from utils import (
-    COLORS, CATEGORY_PALETTE, MESES_PT,
-    fmt_moeda, fmt_num, fmt_pct, plotly_layout_defaults,
+    COLORS, CATEGORY_PALETTE,
+    fmt_moeda, fmt_num, fmt_pct, plotly_layout_defaults, variacao_pct,
 )
 
 
@@ -33,13 +34,28 @@ def page_header(titulo: str, subtitulo: str):
     )
 
 
-def kpi_card(label: str, value: str, note: str = ""):
+def _delta_html(delta_pct):
+    if delta_pct is None:
+        return ""
+    seta = "▲" if delta_pct >= 0 else "▼"
+    classe = "kpi-delta-up" if delta_pct >= 0 else "kpi-delta-down"
+    valor = f"{abs(delta_pct):.1f}".replace(".", ",")
+    return f'<span class="kpi-delta {classe}">{seta} {valor}%</span>'
+
+
+def kpi_card(label: str, value: str, note: str = "", delta_pct: float | None = None):
+    delta_html = _delta_html(delta_pct)
+    rodape = ""
+    if delta_html or note:
+        rodape = f'<div class="kpi-row">{delta_html}' + (
+            f'<span class="kpi-note" style="margin:0;">{note}</span>' if note else ""
+        ) + "</div>"
     st.markdown(
         f"""
         <div class="kpi-card">
             <div class="kpi-label">{label}</div>
             <div class="kpi-value">{value}</div>
-            <div class="kpi-note">{note}</div>
+            {rodape}
         </div>
         """,
         unsafe_allow_html=True,
@@ -57,10 +73,152 @@ def chart_card_close():
     st.markdown("</div>", unsafe_allow_html=True)
 
 
+def _donut(labels, values, height):
+    total = sum(values)
+    fig = go.Figure(go.Pie(
+        labels=labels, values=values, hole=0.68,
+        marker=dict(colors=CATEGORY_PALETTE, line=dict(color=COLORS["surface"], width=3)),
+        textinfo="percent", textfont=dict(size=11, color=COLORS["text"]),
+        hovertemplate="%{label}<br>R$ %{value:,.2f}<extra></extra>",
+        sort=False,
+    ))
+    fig = plotly_layout_defaults(fig, height=height, legend=True)
+    fig.update_layout(
+        legend=dict(orientation="v", x=1, y=0.5, font=dict(size=10.5, color=COLORS["muted"])),
+        annotations=[dict(
+            text=f"<b>{fmt_moeda(total)}</b><br><span style='font-size:10px;color:{COLORS['muted']}'>TOTAL</span>",
+            x=0.5, y=0.5, showarrow=False, font=dict(size=14, color=COLORS["text"], family="IBM Plex Mono"),
+        )],
+    )
+    return fig
+
+
+# ----------------------------------------------------------------------------
+# PÁGINA 0 — INÍCIO
+# ----------------------------------------------------------------------------
+def view_inicio(df: pd.DataFrame, df_prev: pd.DataFrame, saudacao: str, data_extenso: str):
+    st.markdown(
+        f"""
+        <div class="hero-card">
+            <span class="hero-tag">Casa&amp;Obra</span>
+            <p class="hero-greeting">{saudacao}! Aqui está o resumo do seu negócio.</p>
+            <p class="hero-date">{data_extenso}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if df.empty:
+        st.warning("Nenhum dado para os filtros selecionados.")
+        return
+
+    total_vendas = df["Valor_Total"].sum()
+    n_pedidos = len(df)
+    ticket_medio = df["Valor_Total"].mean()
+    margem_total = df["Margem"].sum()
+
+    total_prev = df_prev["Valor_Total"].sum() if not df_prev.empty else None
+    pedidos_prev = len(df_prev) if not df_prev.empty else None
+    ticket_prev = df_prev["Valor_Total"].mean() if not df_prev.empty else None
+    margem_prev = df_prev["Margem"].sum() if not df_prev.empty else None
+
+    d_vendas = variacao_pct(total_vendas, total_prev)
+    d_pedidos = variacao_pct(n_pedidos, pedidos_prev)
+    d_ticket = variacao_pct(ticket_medio, ticket_prev)
+    d_margem = variacao_pct(margem_total, margem_prev)
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        kpi_card("Total de Vendas", fmt_moeda(total_vendas),
+                  "vs. período anterior" if d_vendas is not None else "", d_vendas)
+    with c2:
+        kpi_card("Pedidos", fmt_num(n_pedidos),
+                  "vs. período anterior" if d_pedidos is not None else "", d_pedidos)
+    with c3:
+        kpi_card("Ticket Médio", fmt_moeda(ticket_medio),
+                  "vs. período anterior" if d_ticket is not None else "", d_ticket)
+    with c4:
+        kpi_card("Margem Estimada", fmt_moeda(margem_total),
+                  "vs. período anterior" if d_margem is not None else "", d_margem)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    col_a, col_b = st.columns([2, 1])
+    with col_a:
+        chart_card_open("Evolução de Vendas no Período")
+        serie = df.groupby("AnoMes", as_index=False)["Valor_Total"].sum()
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=serie["AnoMes"], y=serie["Valor_Total"],
+            mode="lines", fill="tozeroy", line_shape="spline",
+            line=dict(color=COLORS["orange"], width=3),
+            fillcolor="rgba(232,117,46,0.22)",
+            hovertemplate="%{x|%b/%Y}<br>R$ %{y:,.2f}<extra></extra>",
+            name="Vendas",
+        ))
+        fig = plotly_layout_defaults(fig, height=320, legend=False)
+        st.plotly_chart(fig, width="stretch")
+        chart_card_close()
+
+    with col_b:
+        chart_card_open("Mix por Categoria")
+        cat = df.groupby("Categoria", as_index=False)["Valor_Total"].sum().sort_values(
+            "Valor_Total", ascending=False
+        )
+        fig = _donut(cat["Categoria"], cat["Valor_Total"], height=320)
+        st.plotly_chart(fig, width="stretch")
+        chart_card_close()
+
+    resumo_vend = df.groupby("Vendedor", as_index=False)["Valor_Total"].sum().sort_values(
+        "Valor_Total", ascending=False
+    )
+    top_vendedor = resumo_vend.iloc[0]
+    prod = df.groupby("Nome_Produto", as_index=False)["Valor_Total"].sum().sort_values(
+        "Valor_Total", ascending=False
+    )
+    top_produto = prod.iloc[0]
+    cat_lider = df.groupby("Categoria")["Valor_Total"].sum().idxmax()
+
+    h1, h2, h3 = st.columns(3)
+    with h1:
+        st.markdown(
+            f"""
+            <div class="highlight-card">
+                <div class="highlight-kicker">Vendedor Destaque</div>
+                <p class="highlight-title">{top_vendedor['Vendedor']}</p>
+                <span class="highlight-sub">{fmt_moeda(top_vendedor['Valor_Total'])}</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with h2:
+        st.markdown(
+            f"""
+            <div class="highlight-card">
+                <div class="highlight-kicker">Produto Mais Vendido</div>
+                <p class="highlight-title">{top_produto['Nome_Produto']}</p>
+                <span class="highlight-sub">{fmt_moeda(top_produto['Valor_Total'])}</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with h3:
+        st.markdown(
+            f"""
+            <div class="highlight-card">
+                <div class="highlight-kicker">Categoria Líder</div>
+                <p class="highlight-title">{cat_lider}</p>
+                <span class="highlight-sub">&nbsp;</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
 # ----------------------------------------------------------------------------
 # PÁGINA 1 — ANÁLISE DE VENDAS
 # ----------------------------------------------------------------------------
-def view_analise(df: pd.DataFrame):
+def view_analise(df: pd.DataFrame, df_prev: pd.DataFrame | None = None):
     page_header(
         "Análise de Vendas",
         "Visão geral do desempenho comercial da Casa&Obra no período selecionado.",
@@ -76,19 +234,23 @@ def view_analise(df: pd.DataFrame):
     total_desconto = df["Desconto"].sum()
     margem_total = df["Margem"].sum()
 
+    df_prev = df_prev if df_prev is not None else pd.DataFrame(columns=df.columns)
+    total_prev = df_prev["Valor_Total"].sum() if not df_prev.empty else None
+    ticket_prev = df_prev["Valor_Total"].mean() if not df_prev.empty else None
+    margem_prev = df_prev["Margem"].sum() if not df_prev.empty else None
+
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
-        kpi_card("Total de Vendas", fmt_moeda(total_vendas))
+        kpi_card("Total de Vendas", fmt_moeda(total_vendas), delta_pct=variacao_pct(total_vendas, total_prev))
     with c2:
         kpi_card("Pedidos", fmt_num(n_pedidos), "linhas de venda")
     with c3:
-        kpi_card("Ticket Médio", fmt_moeda(ticket_medio))
+        kpi_card("Ticket Médio", fmt_moeda(ticket_medio), delta_pct=variacao_pct(ticket_medio, ticket_prev))
     with c4:
         kpi_card("Desconto Concedido", fmt_moeda(total_desconto),
                   fmt_pct(100 * total_desconto / (total_vendas + total_desconto)) + " sobre o bruto")
     with c5:
-        kpi_card("Margem Estimada", fmt_moeda(margem_total),
-                  fmt_pct(100 * margem_total / total_vendas) + " de margem")
+        kpi_card("Margem Estimada", fmt_moeda(margem_total), delta_pct=variacao_pct(margem_total, margem_prev))
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -99,14 +261,14 @@ def view_analise(df: pd.DataFrame):
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=serie["AnoMes"], y=serie["Valor_Total"],
-            mode="lines", fill="tozeroy",
-            line=dict(color=COLORS["orange"], width=2.5),
-            fillcolor="rgba(232,117,46,0.15)",
+            mode="lines", fill="tozeroy", line_shape="spline",
+            line=dict(color=COLORS["orange"], width=3),
+            fillcolor="rgba(232,117,46,0.22)",
             hovertemplate="%{x|%b/%Y}<br>R$ %{y:,.2f}<extra></extra>",
             name="Vendas",
         ))
         fig = plotly_layout_defaults(fig, height=340, legend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
     with col_b:
@@ -114,15 +276,8 @@ def view_analise(df: pd.DataFrame):
         cat = df.groupby("Categoria", as_index=False)["Valor_Total"].sum().sort_values(
             "Valor_Total", ascending=False
         )
-        fig = go.Figure(go.Pie(
-            labels=cat["Categoria"], values=cat["Valor_Total"], hole=0.55,
-            marker=dict(colors=CATEGORY_PALETTE, line=dict(color="white", width=2)),
-            textinfo="percent", textfont=dict(size=11),
-            hovertemplate="%{label}<br>R$ %{value:,.2f}<extra></extra>",
-        ))
-        fig = plotly_layout_defaults(fig, height=340, legend=True)
-        fig.update_layout(legend=dict(orientation="v", x=1, y=0.5, font=dict(size=10)))
-        st.plotly_chart(fig, use_container_width=True)
+        fig = _donut(cat["Categoria"], cat["Valor_Total"], height=340)
+        st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
     col_c, col_d = st.columns(2)
@@ -131,11 +286,11 @@ def view_analise(df: pd.DataFrame):
         ano = df.groupby("Ano", as_index=False)["Valor_Total"].sum()
         fig = go.Figure(go.Bar(
             x=ano["Ano"].astype(str), y=ano["Valor_Total"],
-            marker_color=COLORS["navy"],
+            marker=dict(color=COLORS["orange"], cornerradius=8),
             hovertemplate="%{x}<br>R$ %{y:,.2f}<extra></extra>",
         ))
         fig = plotly_layout_defaults(fig, height=300, legend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
     with col_d:
@@ -145,11 +300,11 @@ def view_analise(df: pd.DataFrame):
         )
         fig = go.Figure(go.Bar(
             x=pag["Valor_Total"], y=pag["Forma_Pagamento"], orientation="h",
-            marker_color=COLORS["orange"],
+            marker=dict(color=COLORS["lime"], cornerradius=8),
             hovertemplate="%{y}<br>R$ %{x:,.2f}<extra></extra>",
         ))
         fig = plotly_layout_defaults(fig, height=300, legend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
 
@@ -195,38 +350,54 @@ def view_vendedor(df: pd.DataFrame):
         r = resumo.sort_values("Total", ascending=True)
         fig = go.Figure(go.Bar(
             x=r["Total"], y=r["Vendedor"], orientation="h",
-            marker_color=[CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)] for i in range(len(r))],
+            marker=dict(
+                color=[CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)] for i in range(len(r))],
+                cornerradius=8,
+            ),
             text=[fmt_moeda(v) for v in r["Total"]],
             textposition="outside",
+            textfont=dict(color=COLORS["text"]),
             hovertemplate="%{y}<br>R$ %{x:,.2f}<extra></extra>",
         ))
         fig = plotly_layout_defaults(fig, height=360, legend=False)
         fig.update_xaxes(visible=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
     with col_b:
         chart_card_open("Evolução Mensal por Vendedor")
         eve = df.groupby(["AnoMes", "Vendedor"], as_index=False)["Valor_Total"].sum()
-        fig = px.line(
-            eve, x="AnoMes", y="Valor_Total", color="Vendedor",
-            color_discrete_sequence=CATEGORY_PALETTE,
-        )
-        fig.update_traces(line=dict(width=2))
+        fig = go.Figure()
+        for i, vendedor in enumerate(sorted(eve["Vendedor"].unique())):
+            serie = eve[eve["Vendedor"] == vendedor]
+            fig.add_trace(go.Scatter(
+                x=serie["AnoMes"], y=serie["Valor_Total"],
+                mode="lines", line_shape="spline", name=vendedor,
+                line=dict(color=CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)], width=2.5),
+                hovertemplate=f"{vendedor}<br>" + "%{x|%b/%Y}<br>R$ %{y:,.2f}<extra></extra>",
+            ))
         fig = plotly_layout_defaults(fig, height=360, legend=True)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
     col_c, col_d = st.columns([1.3, 1])
     with col_c:
-        chart_card_open("Categoria de Produto por Vendedor")
+        chart_card_open("Mix de Categoria por Vendedor")
         piv = df.groupby(["Vendedor", "Categoria"], as_index=False)["Valor_Total"].sum()
-        fig = px.bar(
-            piv, x="Vendedor", y="Valor_Total", color="Categoria",
-            color_discrete_sequence=CATEGORY_PALETTE, barmode="stack",
-        )
+        piv["Pct"] = piv.groupby("Vendedor")["Valor_Total"].transform(lambda s: 100 * s / s.sum())
+        ordem_vend = resumo.sort_values("Total", ascending=True)["Vendedor"].tolist()
+        fig = go.Figure()
+        for i, categoria in enumerate(sorted(piv["Categoria"].unique())):
+            serie = piv[piv["Categoria"] == categoria].set_index("Vendedor").reindex(ordem_vend)
+            fig.add_trace(go.Bar(
+                y=ordem_vend, x=serie["Pct"], orientation="h", name=categoria,
+                marker=dict(color=CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)], cornerradius=6),
+                hovertemplate=f"{categoria}<br>" + "%{y}: %{x:.1f}%<extra></extra>",
+            ))
+        fig.update_layout(barmode="stack")
         fig = plotly_layout_defaults(fig, height=340, legend=True)
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_xaxes(ticksuffix="%")
+        st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
     with col_d:
@@ -234,11 +405,18 @@ def view_vendedor(df: pd.DataFrame):
         t = resumo.sort_values("Ticket", ascending=True)
         fig = go.Figure(go.Bar(
             x=t["Ticket"], y=t["Vendedor"], orientation="h",
-            marker_color=COLORS["slate"],
+            marker=dict(
+                color=t["Ticket"], colorscale=[[0, COLORS["slate_light"]], [1, COLORS["orange"]]],
+                cornerradius=8,
+            ),
+            text=[fmt_moeda(v) for v in t["Ticket"]],
+            textposition="outside",
+            textfont=dict(color=COLORS["text"]),
             hovertemplate="%{y}<br>R$ %{x:,.2f}<extra></extra>",
         ))
         fig = plotly_layout_defaults(fig, height=340, legend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_xaxes(visible=False)
+        st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
     chart_card_open("Detalhamento por Vendedor")
@@ -248,7 +426,7 @@ def view_vendedor(df: pd.DataFrame):
     tabela["Desconto"] = tabela["Desconto"].apply(fmt_moeda)
     tabela["Margem"] = tabela["Margem"].apply(fmt_moeda)
     tabela.columns = ["Vendedor", "Total Vendido", "Pedidos", "Ticket Médio", "Desconto Total", "Margem Estimada"]
-    st.dataframe(tabela, use_container_width=True, hide_index=True)
+    st.dataframe(tabela, width="stretch", hide_index=True)
     chart_card_close()
 
 
@@ -293,11 +471,14 @@ def view_produtos(df: pd.DataFrame):
         top15 = prod.head(15).sort_values("Total", ascending=True)
         fig = go.Figure(go.Bar(
             x=top15["Total"], y=top15["Nome_Produto"], orientation="h",
-            marker_color=COLORS["orange"],
+            marker=dict(
+                color=top15["Total"], colorscale=[[0, COLORS["slate_light"]], [1, COLORS["orange"]]],
+                cornerradius=6,
+            ),
             hovertemplate="%{y}<br>R$ %{x:,.2f}<extra></extra>",
         ))
         fig = plotly_layout_defaults(fig, height=420, legend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
     with col_b:
@@ -305,35 +486,27 @@ def view_produtos(df: pd.DataFrame):
         cat = df.groupby("Categoria", as_index=False)["Valor_Total"].sum().sort_values(
             "Valor_Total", ascending=False
         )
-        fig = go.Figure(go.Pie(
-            labels=cat["Categoria"], values=cat["Valor_Total"], hole=0.55,
-            marker=dict(colors=CATEGORY_PALETTE, line=dict(color="white", width=2)),
-            textinfo="percent", textfont=dict(size=11),
-            hovertemplate="%{label}<br>R$ %{value:,.2f}<extra></extra>",
-        ))
-        fig = plotly_layout_defaults(fig, height=420, legend=True)
-        fig.update_layout(legend=dict(orientation="v", x=1, y=0.5, font=dict(size=10)))
-        st.plotly_chart(fig, use_container_width=True)
+        fig = _donut(cat["Categoria"], cat["Valor_Total"], height=420)
+        st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
     chart_card_open("Categoria e Subcategoria — Mapa de Faturamento")
     sub = df.groupby(["Categoria", "Subcategoria"], as_index=False)["Valor_Total"].sum()
-    fig = px.treemap(
-        sub, path=["Categoria", "Subcategoria"], values="Valor_Total",
-        color="Categoria", color_discrete_sequence=CATEGORY_PALETTE,
-    )
-    fig.update_traces(
+    fig = go.Figure(go.Treemap(
+        labels=sub["Subcategoria"], parents=sub["Categoria"], values=sub["Valor_Total"],
+        branchvalues="total",
+        marker=dict(colors=CATEGORY_PALETTE * 3, line=dict(color=COLORS["surface"], width=2)),
+        textfont=dict(family="Work Sans", size=12, color=COLORS["navy"]),
         hovertemplate="%{label}<br>R$ %{value:,.2f}<extra></extra>",
-        textfont=dict(family="Work Sans", size=12),
-    )
+    ))
     fig = plotly_layout_defaults(fig, height=420, legend=False)
     fig.update_layout(margin=dict(l=4, r=4, t=10, b=4))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     chart_card_close()
 
     chart_card_open("Detalhamento de Produtos")
     tabela = prod.copy()
     tabela["Total"] = tabela["Total"].apply(fmt_moeda)
     tabela.columns = ["Produto", "Total Vendido", "Quantidade", "Categoria"]
-    st.dataframe(tabela, use_container_width=True, hide_index=True, height=320)
+    st.dataframe(tabela, width="stretch", hide_index=True, height=320)
     chart_card_close()
