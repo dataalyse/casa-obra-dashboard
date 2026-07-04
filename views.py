@@ -7,7 +7,6 @@ Vendedor e Vendas por Produtos.
 from __future__ import annotations
 
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -457,22 +456,23 @@ def view_vendedor(df: pd.DataFrame, df_full: pd.DataFrame | None = None):
         piv = df.groupby(["Vendedor", "Categoria"], as_index=False)["Valor_Total"].sum()
         piv["Pct"] = piv.groupby("Vendedor")["Valor_Total"].transform(lambda s: 100 * s / s.sum())
         ordem_vend = resumo.sort_values("Total", ascending=True)["Vendedor"].tolist()
-        fig = go.Figure()
-        for i, categoria in enumerate(sorted(piv["Categoria"].unique())):
-            serie = piv[piv["Categoria"] == categoria].set_index("Vendedor").reindex(ordem_vend)
-            cor = CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)]
-            fig.add_trace(go.Bar(
-                y=ordem_vend, x=serie["Pct"], orientation="h", name=categoria,
-                marker=dict(color=cor, cornerradius=6),
-                text=[f"{v:.0f}%" if pd.notna(v) else "" for v in serie["Pct"]],
-                textposition="inside",
-                insidetextanchor="middle",
-                textfont=dict(color=_cor_texto_para([cor])[0]),
-                hovertemplate=f"{categoria}<br>" + "%{y}: %{x:.1f}%<extra></extra>",
-            ))
-        fig.update_layout(barmode="stack")
-        fig = plotly_layout_defaults(fig, height=340, legend=True)
-        fig.update_xaxes(ticksuffix="%")
+        ordem_cat = sorted(piv["Categoria"].unique())
+        tabela_pct = piv.pivot(index="Vendedor", columns="Categoria", values="Pct").reindex(
+            index=ordem_vend, columns=ordem_cat
+        ).fillna(0)
+        fig = go.Figure(go.Heatmap(
+            z=tabela_pct.values, x=tabela_pct.columns, y=tabela_pct.index,
+            colorscale=[[0, COLORS["surface"]], [1, COLORS["orange"]]],
+            zmin=0, zmax=tabela_pct.values.max(),
+            text=[[f"{v:.0f}%" for v in linha] for linha in tabela_pct.values],
+            texttemplate="%{text}",
+            textfont=dict(size=12, color=COLORS["text"]),
+            xgap=5, ygap=5,
+            showscale=False,
+            hovertemplate="%{y} — %{x}<br>%{z:.1f}%<extra></extra>",
+        ))
+        fig = plotly_layout_defaults(fig, height=340, legend=False)
+        fig.update_yaxes(showgrid=False)
         st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
@@ -573,19 +573,26 @@ def view_produtos(df: pd.DataFrame, df_full: pd.DataFrame | None = None):
         st.plotly_chart(fig, width="stretch")
         chart_card_close()
 
-    chart_card_open("Categoria e Subcategoria — Mapa de Faturamento")
+    chart_card_open("Faturamento por Categoria e Subcategoria")
     sub = df.groupby(["Categoria", "Subcategoria"], as_index=False)["Valor_Total"].sum()
-    fig = px.treemap(
-        sub, path=["Categoria", "Subcategoria"], values="Valor_Total",
-        color="Categoria", color_discrete_sequence=CATEGORY_PALETTE,
-    )
-    fig.update_traces(
-        marker=dict(line=dict(color=COLORS["surface"], width=2)),
-        textfont=dict(family="Work Sans", size=12, color=COLORS["navy"]),
-        hovertemplate="%{label}<br>R$ %{value:,.2f}<extra></extra>",
-    )
-    fig = plotly_layout_defaults(fig, height=420, legend=False)
-    fig.update_layout(margin=dict(l=4, r=4, t=10, b=4))
+    sub = sub.sort_values(["Categoria", "Valor_Total"], ascending=[True, True])
+    ordem_categorias = sorted(sub["Categoria"].unique())
+    ordem_subcategorias = sub["Subcategoria"].tolist()
+    fig = go.Figure()
+    for i, categoria in enumerate(ordem_categorias):
+        d = sub[sub["Categoria"] == categoria]
+        cor = CATEGORY_PALETTE[i % len(CATEGORY_PALETTE)]
+        fig.add_trace(go.Bar(
+            x=d["Valor_Total"], y=d["Subcategoria"], orientation="h", name=categoria,
+            marker=dict(color=cor, cornerradius=6),
+            text=[fmt_moeda(v) for v in d["Valor_Total"]],
+            textposition="inside",
+            insidetextanchor="middle",
+            textfont=dict(color=_cor_texto_para([cor])[0], size=10),
+            hovertemplate=f"{categoria}<br>" + "%{y}<br>R$ %{x:,.2f}<extra></extra>",
+        ))
+    fig.update_yaxes(categoryorder="array", categoryarray=ordem_subcategorias)
+    fig = plotly_layout_defaults(fig, height=max(420, 26 * len(ordem_subcategorias)), legend=True)
     st.plotly_chart(fig, width="stretch")
     chart_card_close()
 
