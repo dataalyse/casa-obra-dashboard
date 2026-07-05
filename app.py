@@ -40,9 +40,9 @@ df_anterior = periodo_anterior(df, data_ini, data_fim, categorias, vendedores, f
 # ----------------------------------------------------------------------------
 # CABEÇALHO SUPERIOR COM LOGO
 # ----------------------------------------------------------------------------
-top_l, top_r = st.columns([4, 1])
+top_l, top_r = st.columns([6, 1])
 with top_r:
-    st.image("assets/logo_horizontal.png", width="stretch")
+    st.image("assets/logo_horizontal.png", width=110)
 
 # ----------------------------------------------------------------------------
 # ROTEAMENTO DE PÁGINAS (navegação por botões, sem barra lateral)

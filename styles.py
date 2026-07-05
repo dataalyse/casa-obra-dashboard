@@ -291,8 +291,11 @@ footer {{visibility: hidden;}}
 /* Marca d'água */
 .watermark {{
     position: fixed;
-    bottom: 14px;
-    right: 18px;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    transform-origin: center;
+    white-space: nowrap;
     font-family: 'Segoe UI', sans-serif;
     font-size: 14px;
     color: {COLORS['muted']};
