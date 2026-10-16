@@ -30,7 +30,7 @@ INFO = "#4FA3E0"
 SEQ = [ORANGE, YELLOW, INFO, POS, "#B07CFF", "#FF8FB1", "#7F93AA"]
 SCALE = [[0, SURFACE], [0.33, BLUE], [0.66, ORANGE], [1, YELLOW]]
 
-LOJA_COR = {"Centro": ORANGE, "Barra Mansa": INFO, "Resende": POS}
+LOJA_COR = {"Volta Redonda": ORANGE, "Barra Mansa": INFO, "Resende": POS}
 SIT_COR = {"Normal": POS, "Abaixo do mínimo": WARN, "Ruptura": CRIT, "Excesso": INFO}
 
 FONT_TITLE = "'Space Grotesk', 'Inter', sans-serif"

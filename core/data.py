@@ -25,7 +25,7 @@ XLSX = ROOT / "data" / "Base_CASA_E_OBRA.xlsx"
 HOJE = pd.Timestamp("2026-09-30")          # data-base de todos os cálculos
 DATA_MIN = pd.Timestamp("2025-01-01")
 
-LOJA_CURTA = {"L01": "Centro", "L02": "Barra Mansa", "L03": "Resende"}
+LOJA_CURTA = {"L01": "Volta Redonda", "L02": "Barra Mansa", "L03": "Resende"}
 LOJA_ID = {v: k for k, v in LOJA_CURTA.items()}
 
 

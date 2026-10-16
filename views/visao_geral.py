@@ -139,7 +139,7 @@ def render():
             cores = SEQ[: len(g)]
         else:
             src = itens(D, ctx, ignore=("loja",))
-            g = src.groupby("loja", observed=True)["valor_liquido"].sum().reindex(["Centro", "Barra Mansa", "Resende"]).dropna()
+            g = src.groupby("loja", observed=True)["valor_liquido"].sum().reindex(["Volta Redonda", "Barra Mansa", "Resende"]).dropna()
             titulo, sub, campo = ("Faturamento por loja", "Escolha uma loja no filtro para detalhar por vendedor", "loja")
             cores = [LOJA_COR[k] for k in g.index]
         tot = g.sum()

@@ -1,7 +1,7 @@
 # CASA & OBRA · Painel de Gestão (Streamlit)
 
 Dashboard demonstrativo da **Datalyse** para uma rede de 3 lojas de materiais de construção no Sul
-Fluminense (Centro · Volta Redonda, Barra Mansa e Resende). Dados fictícios de jan/2025 a set/2026,
+Fluminense (Volta Redonda, Barra Mansa e Resende). Dados fictícios de jan/2025 a set/2026,
 com data-base em **30/09/2026**.
 
 🔗 https://casa-obra-dashboard.streamlit.app/

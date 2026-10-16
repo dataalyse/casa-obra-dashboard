@@ -17,7 +17,7 @@ from core.theme import data_br
 
 PRESETS = ["Este mês", "Mês anterior", "Últimos 3 meses", "Últimos 12 meses", "2025", "2026 (YTD)", "Tudo",
            "Personalizado"]
-LOJAS = ["Todas", "Centro", "Barra Mansa", "Resende"]
+LOJAS = ["Todas", "Volta Redonda", "Barra Mansa", "Resende"]
 COMPS = ["Período anterior", "Ano anterior"]
 
 DEFAULTS = {
@@ -206,6 +206,8 @@ def filter_bar(D: dict, page: str, applies: set, extra: Callable[[], None] | Non
     sel_dep = st.session_state["f_depto"]
     cats = sorted(prod.loc[prod["departamento"].isin(sel_dep) if sel_dep else slice(None), "categoria"].unique())
     st.session_state["f_cat"] = [c for c in st.session_state["f_cat"] if c in cats]
+    if st.session_state.get("f_loja") not in LOJAS:
+        st.session_state["f_loja"] = "Todas"
     loja = st.session_state.get("f_loja") or "Todas"
     vs = vend if loja == "Todas" else vend[vend["id_loja"] == LOJA_ID[loja]]
     vend_opts = sorted(vs["vendedor"].unique()) + ["E-commerce"]
