@@ -232,6 +232,25 @@ h1,h2,h3,h4 {{ font-family:{FONT_TITLE}; }}
 [data-testid="stSidebarNav"] a span {{ color: var(--text) !important; font-weight:500; }}
 [data-testid="stSidebarNav"] a[aria-current="page"] svg, [data-testid="stSidebarNav"] a[aria-current="page"] span[data-testid="stIconMaterial"] {{ color: var(--brand-orange) !important; }}
 
+/* ---------- Sem menu lateral ---------- */
+[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], [data-testid="stExpandSidebarButton"] {{ display:none !important; }}
+
+/* ---------- Barra superior ---------- */
+div.st-key-topbar {{ border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:2px; }}
+.co-brand {{ display:flex; align-items:center; gap:16px; }}
+.co-brand img {{ height:40px; }}
+.co-brand-sub {{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted);
+  border-left:1px solid var(--border); padding-left:16px; line-height:1.5; }}
+div.st-key-topnav {{ padding:4px 0 8px 0; }}
+div[class*="st-key-navlink_"] [data-testid="stPageLink"] a {{
+  background:{SURFACE}; border:1px solid var(--border); border-radius:10px; padding:6px 16px;
+  transition: background .15s ease, border-color .15s ease;
+}}
+div[class*="st-key-navlink_"] [data-testid="stPageLink"] a span {{ color:var(--text) !important; font-weight:600; font-size:14px; }}
+div[class*="st-key-navlink_off_"] [data-testid="stPageLink"] a:hover {{ border-color:{ORANGE}; background:{rgba(ORANGE, .12)}; }}
+div[class*="st-key-navlink_on_"] [data-testid="stPageLink"] a {{ background:{ORANGE}; border-color:{ORANGE}; box-shadow:0 0 18px {ORANGE}55; }}
+div[class*="st-key-navlink_on_"] [data-testid="stPageLink"] a span {{ color:{BG} !important; }}
+
 /* ---------- Cabeçalho ---------- */
 .co-header {{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; }}
 .co-header img {{ height:34px; }}

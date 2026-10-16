@@ -25,10 +25,9 @@ st.set_page_config(
     page_title="CASA & OBRA | Painel de Gestão",
     page_icon=str(ASSETS / "logo-icone.png"),
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 st.markdown(CSS, unsafe_allow_html=True)
-st.logo(str(ASSETS / "logo-horizontal.png"), icon_image=str(ASSETS / "logo-icone.png"), size="large")
 
 load()
 init_state()
@@ -47,15 +46,8 @@ for chave, titulo, rota, icone, _, _ in nav.MENU:
     nav.PAGES[chave] = p
     paginas.append(p)
 
-atual = st.navigation(paginas, position="sidebar")
-
-with st.sidebar:
-    st.markdown(
-        "<div style='font-size:11px;color:var(--text-muted);margin-top:18px;line-height:1.6'>"
-        "Atalhos: <b>1–7</b> trocam de página · <b>F</b> foca os filtros · <b>Esc</b> limpa o filtro cruzado"
-        "</div>",
-        unsafe_allow_html=True,
-    )
+# sem menu lateral: a navegação é a barra de botões no topo de cada página (core.ui.topbar)
+atual = st.navigation(paginas, position="hidden")
 
 atual.run()
 
@@ -71,7 +63,7 @@ if (!doc.__coKeys) {
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (/^[1-7]$/.test(e.key)) {
-      const links = doc.querySelectorAll('[data-testid="stSidebarNav"] a');
+      const links = doc.querySelectorAll('.st-key-topnav a');
       const a = links[parseInt(e.key, 10)];
       if (a) { a.click(); e.preventDefault(); }
     } else if (e.key === 'f' || e.key === 'F') {

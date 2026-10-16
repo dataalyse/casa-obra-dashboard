@@ -23,21 +23,48 @@ from core.theme import (
 # ----------------------------------------------------------------------------
 # CABEÇALHO / RODAPÉ
 # ----------------------------------------------------------------------------
+@st.cache_data(show_spinner=False)
+def _logo_b64(nome: str) -> str:
+    import base64
+    from core.data import ROOT
+    return base64.b64encode((ROOT / "assets" / nome).read_bytes()).decode()
+
+
+def topbar(ativa: str | None, navegacao: bool = True):
+    """Barra superior: marca à esquerda, data de atualização à direita e, abaixo,
+    a fileira de botões de navegação entre as páginas (substitui o menu lateral)."""
+    with st.container(key="topbar"):
+        c1, c2 = st.columns([4, 1.4], vertical_alignment="center")
+        with c1:
+            st.markdown(
+                f"""<div class="co-brand">
+                    <img src="data:image/png;base64,{_logo_b64('logo-horizontal.png')}" alt="Casa&amp;Obra"/>
+                    <div class="co-brand-sub">Painel de gestão<br>Volta Redonda · Barra Mansa · Resende</div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+        with c2:
+            st.markdown(
+                f'<div style="display:flex;justify-content:flex-end"><span class="co-badge"><span class="co-dot"></span>'
+                f'Atualizado <b>{data_br(HOJE)}</b></span></div>',
+                unsafe_allow_html=True,
+            )
+    if navegacao and not st.session_state.get("f_present"):
+        with st.container(key="topnav", horizontal=True, gap="small"):
+            itens_nav = [("inicio", "Início", ":material/home:")] + [
+                (k, nav.NAV_LABEL[k], ic) for k, _, _, ic, _, _ in nav.MENU]
+            for k, rotulo, ic in itens_nav:
+                with st.container(key=f"navlink_{'on' if k == ativa else 'off'}_{k}", width="content"):
+                    st.page_link(nav.PAGES[k], label=rotulo, icon=ic)
+
+
 def header(titulo: str, subtitulo: str):
-    c1, c2 = st.columns([5, 1.25], vertical_alignment="center")
-    with c1:
-        st.markdown(
-            f"""<div class="co-header">
-                <div><p class="co-title">{titulo}</p><p class="co-sub">{subtitulo}</p></div>
-            </div>""",
-            unsafe_allow_html=True,
-        )
-    with c2:
-        st.markdown(
-            f'<div style="display:flex;justify-content:flex-end"><span class="co-badge"><span class="co-dot"></span>'
-            f'Atualizado <b>{data_br(HOJE)}</b></span></div>',
-            unsafe_allow_html=True,
-        )
+    st.markdown(
+        f"""<div class="co-header">
+            <div><p class="co-title">{titulo}</p><p class="co-sub">{subtitulo}</p></div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
 
 
 def footer():
