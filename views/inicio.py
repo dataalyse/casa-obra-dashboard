@@ -21,14 +21,6 @@ def _b64(path: Path) -> str:
 CSS = f"""
 <style>
 [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], [data-testid="stExpandSidebarButton"] {{ display:none !important; }}
-.stApp {{
-  background-image:
-    linear-gradient({rgba("#FFFFFF", .05)} 1px, transparent 1px),
-    linear-gradient(90deg, {rgba("#FFFFFF", .05)} 1px, transparent 1px),
-    linear-gradient({rgba("#FFFFFF", .025)} 1px, transparent 1px),
-    linear-gradient(90deg, {rgba("#FFFFFF", .025)} 1px, transparent 1px) !important;
-  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px !important;
-}}
 .blob {{ position:fixed; width:520px; height:520px; border-radius:50%; filter: blur(110px); opacity:.35; z-index:0; pointer-events:none; }}
 .blob.a {{ background:{ORANGE}; top:-160px; left:-120px; animation: drift 18s ease-in-out infinite alternate; }}
 .blob.b {{ background:{BLUE}; bottom:-200px; right:-140px; opacity:.6; animation: drift 22s ease-in-out infinite alternate-reverse; }}
