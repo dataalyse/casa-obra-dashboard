@@ -1,65 +1,89 @@
 """
-Casa&Obra — Painel de Vendas
-Arquivo principal do app Streamlit.
+Casa&Obra — Painel de Gestão (Streamlit)
+Dashboard demonstrativo Datalyse para uma rede de 3 lojas de materiais de
+construção. Especificação: ESCOPO_DASHBOARD_CASA_E_OBRA.md.
 
 Para executar:
     pip install -r requirements.txt
     streamlit run app.py
 """
 
-import streamlit as st
+from pathlib import Path
 
-from utils import (
-    load_data, apply_filters, get_filter_state, periodo_anterior,
-    saudacao_br, data_extenso_br,
-)
-from styles import get_css
-from views import view_inicio, view_analise, view_vendedor, view_produtos
+import streamlit as st
+import streamlit.components.v1 as components
+
+from core import nav
+from core.data import load
+from core.filters import init_state
+from core.theme import CSS
+from views import clientes, estoque, financeiro, inicio, inteligencia, rentabilidade, vendas, visao_geral
+
+ASSETS = Path(__file__).resolve().parent / "assets"
 
 st.set_page_config(
-    page_title="Casa&Obra | Painel de Vendas",
-    page_icon="assets/logo_mini.png",
+    page_title="CASA & OBRA | Painel de Gestão",
+    page_icon=str(ASSETS / "logo-icone.png"),
     layout="wide",
+    initial_sidebar_state="expanded",
 )
+st.markdown(CSS, unsafe_allow_html=True)
+st.logo(str(ASSETS / "logo-horizontal.png"), icon_image=str(ASSETS / "logo-icone.png"), size="large")
 
-st.markdown(get_css(), unsafe_allow_html=True)
+load()
+init_state()
 
-# ----------------------------------------------------------------------------
-# DADOS E ESTADO DE NAVEGAÇÃO/FILTROS
-# ----------------------------------------------------------------------------
-df = load_data()
+RENDER = {
+    "visao": visao_geral.render, "vendas": vendas.render, "estoque": estoque.render,
+    "rentab": rentabilidade.render, "finan": financeiro.render, "clientes": clientes.render,
+    "intel": inteligencia.render,
+}
 
-if "pagina" not in st.session_state:
-    st.session_state["pagina"] = "Início"
-pagina = st.session_state["pagina"]
+home = st.Page(inicio.render, title="Início", icon=":material/home:", url_path="inicio", default=True)
+nav.PAGES["inicio"] = home
+paginas = [home]
+for chave, titulo, rota, icone, _, _ in nav.MENU:
+    p = st.Page(RENDER[chave], title=titulo, icon=icone, url_path=rota)
+    nav.PAGES[chave] = p
+    paginas.append(p)
 
-data_ini, data_fim, categorias, vendedores, formas = get_filter_state(df)
-df_filtrado = apply_filters(df, data_ini, data_fim, categorias, vendedores, formas)
-df_anterior = periodo_anterior(df, data_ini, data_fim, categorias, vendedores, formas)
+atual = st.navigation(paginas, position="sidebar")
 
-# ----------------------------------------------------------------------------
-# CABEÇALHO SUPERIOR COM LOGO
-# ----------------------------------------------------------------------------
-top_l, top_r = st.columns([1, 6])
-with top_l:
-    st.image("assets/logo_horizontal.png", width=110)
+with st.sidebar:
+    st.markdown(
+        "<div style='font-size:11px;color:var(--text-muted);margin-top:18px;line-height:1.6'>"
+        "Atalhos: <b>1–7</b> trocam de página · <b>F</b> foca os filtros · <b>Esc</b> limpa o filtro cruzado"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 
-# ----------------------------------------------------------------------------
-# ROTEAMENTO DE PÁGINAS (navegação por botões, sem barra lateral)
-# ----------------------------------------------------------------------------
-if pagina == "Início":
-    view_inicio(df_filtrado, df_anterior, saudacao_br(), data_extenso_br())
-elif pagina == "Análise de Vendas":
-    view_analise(df_filtrado, df_anterior, df)
-elif pagina == "Vendas por Vendedor":
-    view_vendedor(df_filtrado, df)
-else:
-    view_produtos(df_filtrado, df)
+atual.run()
 
-st.markdown('<div class="watermark">@datalyse</div>', unsafe_allow_html=True)
-
-# O rerun de navegação é disparado aqui, só depois que a página inteira
-# (inclusive seus widgets de filtro) já foi renderizada nesta execução —
-# veja o comentário em views.nav_bar() para o motivo.
-if st.session_state.pop("_trocar_pagina", False):
-    st.rerun()
+# Atalhos de teclado (1–7, F, Esc) injetados na página principal
+components.html(
+    """
+<script>
+const doc = window.parent.document;
+if (!doc.__coKeys) {
+  doc.__coKeys = true;
+  doc.addEventListener('keydown', (e) => {
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^[1-7]$/.test(e.key)) {
+      const links = doc.querySelectorAll('[data-testid="stSidebarNav"] a');
+      const a = links[parseInt(e.key, 10)];
+      if (a) { a.click(); e.preventDefault(); }
+    } else if (e.key === 'f' || e.key === 'F') {
+      const i = doc.querySelector('.st-key-filtros input');
+      if (i) { i.focus(); e.preventDefault(); }
+    } else if (e.key === 'Escape') {
+      const b = doc.querySelector('.st-key-esc_cross button');
+      if (b) b.click();
+    }
+  });
+}
+</script>
+""",
+    height=0,
+)
