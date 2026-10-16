@@ -142,6 +142,7 @@ def render():
                         hovertemplate="<b>%{x}</b><br>Projeção: R$ %{y:,.2f}<extra></extra>")
         style(fig, 380)
         fig.update_yaxes(tickprefix="R$ ", rangemode="tozero")
+        fig.update_xaxes(categoryorder="array", categoryarray=xa + xp[1:])
         chart("in_proj", "Tendência e projeção",
               f"Próximos 3 meses = média dos últimos 3 meses × sazonalidade do ano anterior · total projetado "
               f"{moeda_curta(sum(proj))}", fig,
@@ -231,7 +232,7 @@ def render():
             card_header("in_log", "Desempenho logístico",
                         f"{num(len(ent2))} entregas · {pct((conc['status_entrega'] == 'Entregue no prazo').mean() if len(conc) else None)} no prazo",
                         pd.DataFrame({"Mês": xa, "Entregas": g.values, "% no prazo": (ok.values * 100).round(1)}))
-            st.plotly_chart(fig, key="pl_in_log", config=PLOTLY_CONFIG, use_container_width=True)
+            st.plotly_chart(fig, key="pl_in_log", config=PLOTLY_CONFIG, width="stretch")
             st.markdown(
                 f"""<div style="display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 8px 0">
                   <div style="flex:1;min-width:140px;background:var(--surface-2);border-radius:12px;padding:10px 14px">

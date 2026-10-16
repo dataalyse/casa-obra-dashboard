@@ -11,7 +11,7 @@ from core.filters import itens
 from core.metrics import abc, estoque_enriquecido, giro, mensal, meses_ate, var
 from core.theme import (
     BLUE, CRIT, INFO, MUTED, ORANGE, POS, SCALE, SEQ, SIT_COR, SURFACE, TEXT, YELLOW,
-    mes_ano, mes_ano_curto, moeda, moeda_curta, num, rgba, style,
+    mes_ano, mes_ano_curto, moeda, moeda_curta, num, rgba, style, texto_sobre_escala,
 )
 from core.ui import chart, footer, html_card, kpi, kpi_row, pill, table
 from views._common import shell
@@ -134,15 +134,16 @@ def render():
         parents = [""] * len(cat) + list(t["categoria"])
         values = list(cat["valor"]) + list(t["valor"])
         cores = list(cat["cob"]) + list(t["cob"])
+        cmax = max(90, np.nanpercentile(cores, 95))
         fig = go.Figure(go.Treemap(
             ids=ids, labels=labels, parents=parents, values=values, branchvalues="total",
-            marker=dict(colors=cores, colorscale=SCALE, cmin=0, cmax=max(90, np.nanpercentile(cores, 95)),
+            marker=dict(colors=cores, colorscale=SCALE, cmin=0, cmax=cmax,
                         line=dict(color=SURFACE, width=2),
                         colorbar=dict(title=dict(text="Cobertura<br>(dias)", font=dict(size=10, color=MUTED)),
                                       tickfont=dict(size=10, color=MUTED), thickness=10, len=0.8)),
             texttemplate="<b>%{label}</b><br>%{customdata[0]}", customdata=np.c_[[moeda_curta(v) for v in values], cores],
             hovertemplate="<b>%{label}</b><br>Valor: R$ %{value:,.2f}<br>Cobertura média: %{customdata[1]:.0f} dias<extra></extra>",
-            textfont=dict(color=TEXT), pathbar=dict(visible=True, textfont=dict(color=TEXT)),
+            textfont=dict(color=texto_sobre_escala(cores, 0, cmax)), pathbar=dict(visible=True, textfont=dict(color=TEXT)),
         ))
         style(fig, 360, legend=False, margin=dict(l=4, r=4, t=28, b=4))
         chart("es_tree", "Valor em estoque por categoria",
@@ -214,6 +215,8 @@ def render():
                     hovertemplate="<b>%{y}</b><br>Mínimo: %{x:,.0f}<extra></extra>")
         fig.add_bar(y=lab, x=cr["estoque_final"].values[::-1], orientation="h", name="Estoque atual",
                     marker=dict(color=[SIT_COR.get(s, ORANGE) for s in cr["situacao_estoque"].values[::-1]], cornerradius=4),
+                    text=[num(v) for v in cr["estoque_final"].values[::-1]], textposition="outside",
+                    textfont=dict(size=10, color=TEXT), cliponaxis=False,
                     hovertemplate="<b>%{y}</b><br>Atual: %{x:,.0f}<extra></extra>")
         style(fig, 380)
         fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.05)

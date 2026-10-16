@@ -1,60 +1,71 @@
-# Casa&Obra — Painel de Vendas (Streamlit)
+# CASA & OBRA · Painel de Gestão (Streamlit)
 
-Dashboard interativo em Python para a loja de materiais de construção **Casa&Obra**,
-com base na planilha `Vendas_Materiais_Construcao_Com_Valor_Total.xlsx`.
+Dashboard demonstrativo da **Datalyse** para uma rede de 3 lojas de materiais de construção no Sul
+Fluminense (Centro · Volta Redonda, Barra Mansa e Resende). Dados fictícios de jan/2025 a set/2026,
+com data-base em **30/09/2026**.
+
+🔗 https://casa-obra-dashboard.streamlit.app/
+
+## Páginas
+
+| # | Página | Pergunta que responde |
+|---|---|---|
+| 0 | Boas-vindas | Mini-KPIs de set/2026 e atalhos para as análises |
+| 1 | Visão Geral | Como a loja está indo? (faturamento, margem, meta, cascata até o resultado) |
+| 2 | Vendas & Comercial | O que, quanto e quem está vendendo? (canais, categorias, horários, vendedores, orçamentos) |
+| 3 | Estoque | O que falta, o que sobra e o que comprar? (situação, curva ABC, capital parado, sugestão de reposição) |
+| 4 | Rentabilidade | Onde está o lucro de verdade? (matriz faturamento × margem, descontos, ranking de lucro) |
+| 5 | Financeiro | Quanto vou receber e pagar? (fluxo de caixa, aging, calendário de vencimentos, despesas) |
+| 6 | Clientes | Quem são e como compram? (segmentos, RFM, NPS, clientes em risco) |
+| 7 | Inteligência | Alertas, sazonalidade, projeção, comparativo entre lojas e insights automáticos |
+
+**Recursos:** filtros globais que persistem entre páginas (período com atalhos, loja, departamento,
+categoria, canal, segmento, vendedor) com chips removíveis · comparativo com período anterior ou ano
+anterior · filtro cruzado clicando nas barras (categoria → subcategoria) · menu **⋯** em cada gráfico com
+"Ver dados" e exportação CSV · PNG pelo ícone de câmera · modo apresentação · atalhos `1`–`7`, `F` e `Esc`.
+
+## Como rodar
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
 
 ## Estrutura
 
 ```
-casa_obra_dashboard/
-├── app.py          # arquivo principal (rodar este)
-├── views.py        # as 3 páginas: Análise, Vendedor, Produtos
-├── styles.py       # identidade visual (CSS)
-├── utils.py        # carga de dados e funções auxiliares
-├── requirements.txt
-├── assets/         # logos Casa&Obra
-└── data/
-    └── vendas.xlsx # planilha de vendas
+app.py                     navegação (st.navigation), logo e atalhos de teclado
+core/data.py               carga da base e tabelas analíticas
+core/filters.py            filtros globais, chips e filtro cruzado
+core/metrics.py            regras de cálculo (faturamento, margem, metas, ABC, estoque, giro, NPS…)
+core/theme.py              paleta Casa&Obra, CSS, tema dos gráficos, formatação pt-BR
+core/ui.py                 cartões de KPI, cartões de gráfico, tabelas
+views/                     uma página por arquivo
+scripts/prepare_data.py    converte o Excel em parquet
+data/Base_CASA_E_OBRA.xlsx base de dados (21 abas, modelo estrela)
+data/parquet/              base pré-processada lida pelo app
+assets/                    logos (horizontal, ícone e caixa)
 ```
-
-## Como rodar
-
-1. Instale as dependências (recomendado usar um ambiente virtual):
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Execute o app:
-   ```bash
-   streamlit run app.py
-   ```
-
-3. O navegador abrirá automaticamente em `http://localhost:8501`.
-
-## Páginas
-
-- **📊 Análise de Vendas** — KPIs gerais, evolução mensal, vendas por categoria,
-  por ano e por forma de pagamento.
-- **🧑‍🔧 Vendas por Vendedor** — ranking da equipe, evolução mensal por
-  vendedor, mix de categorias por vendedor e tabela detalhada.
-- **🧱 Vendas por Produtos** — top produtos, participação por categoria,
-  mapa (treemap) de categoria/subcategoria e tabela completa de produtos.
-
-Todos os filtros da barra lateral (período, categoria, vendedor e forma de
-pagamento) se aplicam simultaneamente às três páginas.
 
 ## Atualizar os dados
 
-Basta substituir o arquivo `data/vendas.xlsx` por uma nova planilha com as
-mesmas colunas:
+1. Substitua `data/Base_CASA_E_OBRA.xlsx` por uma planilha com as mesmas abas e colunas.
+2. Rode `python scripts/prepare_data.py` para regenerar `data/parquet/`.
+3. Se a data-base mudar, ajuste `HOJE` em `core/data.py`.
 
-`Data_Venda, Nome_Cliente, Nome_Produto, Categoria, Subcategoria, Unidade,
-Quantidade, Preço_Unitário, Desconto, Valor_Total, Custo_Unitário,
-Forma_Pagamento, Vendedor`
+## Regras importantes
+
+- Vendas com `status_venda = "Cancelada"` ficam fora de todos os indicadores de venda.
+- `id_cliente = CL00000` (balcão não identificado) entra no faturamento, mas não nas análises de clientes.
+- Vendas sem vendedor são do e-commerce e aparecem como "E-commerce" nos rankings.
+- Estoque é uma foto mensal: usa sempre o último mês do período filtrado.
+- Quando o período de comparação começa antes de jan/2025, os indicadores mostram
+  "comparação indisponível" em vez de uma variação enganosa.
 
 ## Identidade visual
 
-Paleta baseada na logo Casa&Obra (laranja `#E8752E`, marinho `#22314A` e
-lima `#E4F222`), tipografia Archivo Black + Work Sans + IBM Plex Mono, e um
-conceito de "planta baixa": cartões com cantos de projeto técnico e uma régua
-de três cores como divisor de seções.
+Laranja `#F07335` · amarelo `#F0FA28` · azul `#1F4E79` sobre tema escuro `#0A1626`.
+Tipografia Space Grotesk (títulos e números) e Inter (texto).
+
+---
+Desenvolvido por **Datalyse** · Dados fictícios para demonstração

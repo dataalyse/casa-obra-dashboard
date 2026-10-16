@@ -117,15 +117,15 @@ def kpi_row(n: int = 6):
 # CARTÃO DE GRÁFICO
 # ----------------------------------------------------------------------------
 def _menu(key: str, data: pd.DataFrame | None, png: bool = True):
-    with st.popover("⋯", use_container_width=False):
+    with st.popover("⋯", width="content"):
         st.markdown("**Ver dados**")
         if data is None or data.empty:
             st.caption("Sem dados para exibir.")
         else:
-            st.dataframe(data, hide_index=True, use_container_width=True, height=min(360, 38 + 35 * len(data)))
+            st.dataframe(data, hide_index=True, width="stretch", height=min(360, 38 + 35 * len(data)))
             st.download_button(
                 "Exportar CSV", data.to_csv(index=False, sep=";", decimal=",").encode("utf-8-sig"),
-                file_name=f"casa_obra_{key}.csv", mime="text/csv", key=f"csv_{key}", use_container_width=True,
+                file_name=f"casa_obra_{key}.csv", mime="text/csv", key=f"csv_{key}", width="stretch",
             )
         if png:
             st.caption("Exportar PNG: use o ícone de câmera que aparece ao passar o mouse sobre o gráfico.")
@@ -152,9 +152,9 @@ def chart(key: str, titulo: str, sub: str, fig, data: pd.DataFrame | None = None
         cfg["toImageButtonOptions"] = {**PLOTLY_CONFIG["toImageButtonOptions"], "filename": f"casa_obra_{key}"}
         if on_select is not None:
             st.plotly_chart(fig, key=sel_key or f"pl_{key}", config=cfg, on_select=on_select,
-                            selection_mode="points", use_container_width=True)
+                            selection_mode="points", width="stretch")
         else:
-            st.plotly_chart(fig, key=f"pl_{key}", config=cfg, use_container_width=True)
+            st.plotly_chart(fig, key=f"pl_{key}", config=cfg, width="stretch")
 
 
 def html_card(key: str, titulo: str, sub: str, body: str, data: pd.DataFrame | None = None, png: bool = False):
@@ -200,7 +200,7 @@ def table(df: pd.DataFrame, align: dict[str, str] | None = None, max_height: int
       <tbody>{''.join(rows)}</tbody>
     </table></div>
     <style>
-      table td, table th {{ padding:7px 10px; border-bottom:1px solid {BORDER}; color:{TEXT}; white-space:nowrap; }}
+      table td, table th {{ padding:6px 8px; border-bottom:1px solid {BORDER}; color:{TEXT}; white-space:nowrap; }}
       table tbody tr:hover {{ background:{rgba(ORANGE, .06)}; }}
     </style>
     """
@@ -227,7 +227,9 @@ def hbar(labels, values, textos, cores=None, height: int = 340, hover: str | Non
     fig.update_xaxes(showgrid=True, gridcolor="rgba(255,255,255,0.06)", showticklabels=False, rangemode="tozero")
     fig.update_yaxes(showgrid=False, ticksuffix="  ", automargin=True)
     if values:
-        fig.update_xaxes(range=[0, max(values) * 1.28])
+        # espaço à direita proporcional ao tamanho do rótulo, para não cortar o texto
+        folga = 1.12 + 0.018 * max(len(str(t)) for t in textos)
+        fig.update_xaxes(range=[0, max(values) * folga])
     return fig
 
 

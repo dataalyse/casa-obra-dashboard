@@ -181,7 +181,7 @@ def render():
             st.session_state.setdefault("p_top_modo", "Faturamento")
             st.segmented_control("Ordenar por", ["Faturamento", "Quantidade"], key="p_top_modo",
                                  label_visibility="collapsed")
-            st.plotly_chart(fig, key="pl_vd_top", config=PLOTLY_CONFIG, use_container_width=True)
+            st.plotly_chart(fig, key="pl_vd_top", config=PLOTLY_CONFIG, width="stretch")
 
     # ---------------------------------------------------------------- 2.6 / 2.7
     a, b = st.columns([2, 1])
@@ -247,8 +247,8 @@ def render():
             card_header("vd_funil", "Funil de orçamentos", f"Conversão de {pct(conv)} · e por que perdemos",
                         pd.DataFrame({"Etapa": ["Emitidos", "Convertidos", "Perdidos", "Em aberto"],
                                       "Qtd": [emit, len(convs), len(perd), emit - len(convs) - len(perd)]}))
-            st.plotly_chart(fig, key="pl_vd_funil", config=PLOTLY_CONFIG, use_container_width=True)
+            st.plotly_chart(fig, key="pl_vd_funil", config=PLOTLY_CONFIG, width="stretch")
             st.markdown('<p class="card-title" style="margin-top:4px">Motivos de perda</p>', unsafe_allow_html=True)
-            st.plotly_chart(fig2, key="pl_vd_motivos", config=PLOTLY_CONFIG, use_container_width=True)
+            st.plotly_chart(fig2, key="pl_vd_motivos", config=PLOTLY_CONFIG, width="stretch")
 
     footer()

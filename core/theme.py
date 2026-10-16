@@ -37,6 +37,12 @@ FONT_TITLE = "'Space Grotesk', 'Inter', sans-serif"
 FONT_BODY = "'Inter', 'Segoe UI', sans-serif"
 
 
+def texto_sobre_escala(valores, vmin: float, vmax: float) -> list[str]:
+    """Texto escuro sobre a parte clara (laranja/amarelo) da escala sequencial, claro sobre a escura."""
+    rng = (vmax - vmin) or 1
+    return ["#0A1626" if (v - vmin) / rng > 0.55 else TEXT for v in valores]
+
+
 def rgba(hex_color: str, a: float) -> str:
     h = hex_color.lstrip("#")
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)

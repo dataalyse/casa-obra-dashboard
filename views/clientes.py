@@ -200,6 +200,7 @@ def render():
         txt = [[f"<b>{rotulo(i, j)}</b><br>{int(mat.iat[i, j])}" if rotulo(i, j) else f"{int(mat.iat[i, j])}"
                 for j in range(len(FREQ))] for i in range(len(REC))]
         fig = go.Figure(go.Heatmap(z=mat.values, x=FREQ, y=REC, colorscale=SCALE, xgap=3, ygap=3, showscale=False,
+                                   zmin=0, zmax=max(1, mat.values.max()) * 1.5,  # topo da escala fica laranja: texto legível
                                    text=txt, texttemplate="%{text}", textfont=dict(size=11, color=TEXT),
                                    hovertemplate="Recência %{y} · frequência %{x}<br><b>%{z:,.0f} clientes</b><extra></extra>"))
         style(fig, 380, legend=False)
@@ -237,7 +238,7 @@ def render():
                 "Cliente": f"<b>{nome}</b>", "Segmento": cli.at[idc, "segmento"], "Cidade": cli.at[idc, "cidade"],
                 "Faturamento": moeda(r["fat"], 0), "Compras": num(r["n"]), "Ticket": moeda(r["fat"] / r["n"], 0),
                 "Última compra": data_br(ult.get(idc)), "Recência": pill(f"{num(rd)} d", tom),
-                "Compras/mês (12m)": f'<div style="width:110px">{sparkline(serie.values)}</div>',
+                "Compras/mês (12m)": f'<div style="width:80px">{sparkline(serie.values)}</div>',
             })
             dados.append({"Cliente": nome, "Segmento": cli.at[idc, "segmento"], "Cidade": cli.at[idc, "cidade"],
                           "Faturamento": round(r["fat"], 2), "Compras": int(r["n"]),

@@ -11,7 +11,7 @@ from core.data import HOJE
 from core.filters import itens, vendas
 from core.metrics import despesas, div, meses_periodo, pagar, receber, var
 from core.theme import (
-    CRIT, INFO, MUTED, ORANGE, POS, SEQ, SURFACE, TEXT, YELLOW, SCALE,
+    CRIT, INFO, MUTED, ORANGE, POS, SEQ, SURFACE, SURFACE2, TEXT, YELLOW, SCALE, texto_sobre_escala,
     data_br, mes_ano_curto, moeda, moeda_curta, num, pct, rgba, style,
 )
 from core.ui import chart, footer, html_card, kpi, kpi_row, pill, table
@@ -188,7 +188,7 @@ def render():
               fig, pd.DataFrame({"Semana a partir de": lab, "A receber": gr.values.round(2), "A pagar": gp.values.round(2)}))
 
     # ------------------------------------------------------------ 5.6 / 5.7
-    a, b = st.columns(2)
+    a, b = st.columns([7, 5])
     with a:
         t = venc.copy()
         t["atraso"] = (HOJE - t["data_vencimento"]).dt.days
@@ -216,12 +216,17 @@ def render():
         labels = list(gg["grupo_despesa"]) + list(g["despesa"])
         parents = [""] * len(gg) + list(g["grupo_despesa"])
         values = list(gg["valor"]) + list(g["valor"])
+        filhos = list(g["valor"])
+        vmax = max(filhos) if filhos else 1
+        # grupos (pais) no fundo escuro; despesas coloridas pela escala sequencial
+        cores = [0] * len(gg) + filhos  # pais no tom mais escuro da escala
         fig = go.Figure(go.Treemap(
             ids=ids, labels=labels, parents=parents, values=values, branchvalues="total",
-            marker=dict(colors=values, colorscale=SCALE, line=dict(color=SURFACE, width=2)),
+            marker=dict(colors=cores, colorscale=SCALE, cmin=0, cmax=vmax, line=dict(color=SURFACE, width=2)),
             texttemplate="<b>%{label}</b><br>%{customdata}", customdata=[moeda_curta(v) for v in values],
             hovertemplate="<b>%{label}</b><br>R$ %{value:,.2f}<br>%{percentRoot:.1%} do total<extra></extra>",
-            textfont=dict(color=TEXT), pathbar=dict(visible=True, textfont=dict(color=TEXT)),
+            textfont=dict(color=[TEXT] * len(gg) + texto_sobre_escala(filhos, 0, vmax)),
+            pathbar=dict(visible=True, textfont=dict(color=TEXT)),
         ))
         style(fig, 470, legend=False, margin=dict(l=4, r=4, t=28, b=4))
         chart("fn_desp", "Despesas por grupo", f"Despesas operacionais do período: {moeda_curta(dsp['valor'].sum())} · clique para abrir",
