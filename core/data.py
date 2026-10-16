@@ -33,8 +33,20 @@ def _read(nome: str) -> pd.DataFrame:
     return pd.read_parquet(PARQUET / f"{nome}.parquet")
 
 
-@st.cache_resource(show_spinner="Carregando a base da Casa&Obra…")
+def _chave_cache() -> str:
+    """Muda sempre que os nomes das lojas, a data-base ou os arquivos de dados mudam.
+    Sem isso, o servidor (ex.: Streamlit Cloud) continuaria servindo a base antiga
+    guardada em memória depois de uma atualização do código."""
+    arquivos = sorted((p.name, p.stat().st_size, int(p.stat().st_mtime)) for p in PARQUET.glob("*.parquet"))
+    return repr((LOJA_CURTA, str(HOJE), arquivos))
+
+
 def load() -> dict[str, pd.DataFrame]:
+    return _load(_chave_cache())
+
+
+@st.cache_resource(show_spinner="Carregando a base da Casa&Obra…", max_entries=1)
+def _load(chave: str) -> dict[str, pd.DataFrame]:
     if not (PARQUET / "fVendas.parquet").exists():
         from scripts.prepare_data import prepare
         prepare()
